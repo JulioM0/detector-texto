@@ -4,10 +4,10 @@ import threading
 import tkinter as tk
 from tkinter import scrolledtext
 
-# configuracion de la camara y medidas
+
 reader = easyocr.Reader(['es'], gpu=False, verbose=False)
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 # variables globales 
@@ -27,7 +27,12 @@ def ocr_worker():
             gray = cv2.cvtColor(frame_copy, cv2.COLOR_BGR2GRAY)  
             gray = cv2.GaussianBlur(gray, (3,3), 0)  
             thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-            results = reader.readtext(thresh, detail=1, paragraph=True, text_threshold=0.6,  low_text=0.4,  link_threshold=0.5, allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+            results = reader.readtext(thresh, detail=1, 
+                                      paragraph=True, 
+                                      text_threshold=0.6,  
+                                      low_text=0.4,  
+                                      link_threshold=0.5, 
+                                      allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz áéíóúüñÁÉÍÓÚÜÑ.,!?-()[]{}:;')
             frame_to_process = None
 
 threading.Thread(target=ocr_worker, daemon=True).start()
@@ -51,12 +56,12 @@ def update_frame():
         elif len(item) == 2:
             bbox, text = item
             prob = 1.0 
-        if prob < 0.85:
+        if prob < 0.8:
             continue
         textos_actuales.add(text)
         if text not in textos_en_pantalla:
             conteo_textos[text] = conteo_textos.get(text, 0) + 1
-            console_text.insert(tk.END, f"{text}: {conteo_textos[text]}\n")
+            console_text.insert(tk.END, f"Valores detectados: {text} - Conteo: {conteo_textos[text]}\n")
 
     # Dibujar en pantalla
         (top_left, top_right, bottom_right, bottom_left) = bbox
@@ -80,6 +85,17 @@ def update_frame():
 
 root = tk.Tk()
 root.title("Resultados de la lectura")
+root.geometry("600x400")
+
+button_frame = tk.Frame(root)
+button_frame.pack(pady=5)
+
+#Boton de limpiar consola
+def clear_console():
+    console_text.delete(1.0, tk.END)
+
+clear_button = tk.Button(button_frame, text="Limpiar Consola", command=clear_console)
+clear_button.pack(side=tk.LEFT, padx=5)
 
 console_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=50, height=20)
 console_text.pack(padx=10, pady=10)
