@@ -4,7 +4,6 @@ import threading
 import tkinter as tk
 from tkinter import scrolledtext
 
-
 reader = easyocr.Reader(['es'], gpu=False, verbose=False)
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540)
@@ -32,7 +31,7 @@ def ocr_worker():
                                       text_threshold=0.6,  
                                       low_text=0.4,  
                                       link_threshold=0.5, 
-                                      allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz áéíóúüñÁÉÍÓÚÜÑ.,!?-()[]{}:;')
+                                      allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúüñÁÉÍÓÚÜÑ.,!?-()[]{}:;')
             frame_to_process = None
 
 threading.Thread(target=ocr_worker, daemon=True).start()
