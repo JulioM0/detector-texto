@@ -4,9 +4,9 @@ import threading
 import tkinter as tk
 from tkinter import scrolledtext
 
-reader = easyocr.Reader(['es'], gpu=False, verbose=False)
+reader = easyocr.Reader(['es','en'], gpu=False, verbose=False)
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 540)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 # variables globales 
@@ -24,14 +24,16 @@ def ocr_worker():
             with lock:
                 frame_copy = frame_to_process.copy()
             gray = cv2.cvtColor(frame_copy, cv2.COLOR_BGR2GRAY)  
-            gray = cv2.GaussianBlur(gray, (3,3), 0)  
-            thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+            gray = cv2.GaussianBlur(gray, (3,3), 0) 
+            gray = cv2.medianBlur(gray, 3) 
+            thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2)
+            thresh = cv2.threshold(thresh, 0, 255, cv2.THRESH_OTSU)[1]
             results = reader.readtext(thresh, detail=1, 
                                       paragraph=True, 
                                       text_threshold=0.6,  
                                       low_text=0.4,  
                                       link_threshold=0.5, 
-                                      allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúüñÁÉÍÓÚÜÑ.,!?-()[]{}:;')
+                                      allowlist='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúüñÁÉÍÓÚÜÑ.,!?-() []{}:;/_¡¿´*=')
             frame_to_process = None
 
 threading.Thread(target=ocr_worker, daemon=True).start()
@@ -48,7 +50,7 @@ def update_frame():
         with lock:
             frame_to_process = frame.copy()
     textos_actuales = set()
-
+    
     for item in results:
         if len(item) == 3:
             bbox, text, prob = item
@@ -60,7 +62,7 @@ def update_frame():
         textos_actuales.add(text)
         if text not in textos_en_pantalla:
             conteo_textos[text] = conteo_textos.get(text, 0) + 1
-            console_text.insert(tk.END, f"Valores detectados: {text} - Conteo: {conteo_textos[text]}\n")
+            console_text.insert(tk.END, f"Valores detectados:\n {text} - Conteo: {conteo_textos[text]}\n")
 
     # Dibujar en pantalla
         (top_left, top_right, bottom_right, bottom_left) = bbox
@@ -84,7 +86,7 @@ def update_frame():
 
 root = tk.Tk()
 root.title("Resultados de la lectura")
-root.geometry("600x400")
+root.geometry("640x480")
 
 button_frame = tk.Frame(root)
 button_frame.pack(pady=5)
